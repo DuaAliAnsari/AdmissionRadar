@@ -1,0 +1,4 @@
+.env
+data/seen_alerts.json
+__pycache__/
+*.pyc
