@@ -13,7 +13,7 @@ import os
 class RelevanceAgent:
     def __init__(self):
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
     async def filter(self, items: list[dict], profile: dict) -> list[dict]:
         """Score each item against the student profile. Return only relevant ones."""

@@ -20,7 +20,7 @@ STUDENT_PROFILE = {
     "interests": ["admissions", "scholarships", "merit lists", "fee structure"],
 
     # Notification channel
-    "email": "youremail@gmail.com",
+    "email": "dua.ansari@gmail.com",
 
     # Urgency threshold: only alert for items this urgent or higher
     "min_urgency": "medium",       # "low", "medium", or "high"

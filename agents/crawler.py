@@ -17,24 +17,36 @@ from datetime import datetime
 class CrawlerAgent:
     def __init__(self):
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
     async def fetch_page(self, session: aiohttp.ClientSession, source: dict) -> dict:
         """Fetch a single URL and return raw text."""
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; PakStudentBot/1.0)"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+        }
         try:
-            async with session.get(source["url"], headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
-                html = await resp.text()
+            async with session.get(
+                source["url"],
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=20),
+                ssl=False
+            ) as resp:
+                if resp.status != 200:
+                    print(f"  ⚠️  {source['name']} returned status {resp.status}")
+                    return {"source": source, "text": "", "status": f"http_{resp.status}"}
+                html = await resp.text(errors="ignore")
                 soup = BeautifulSoup(html, "html.parser")
-                # Remove noise: scripts, styles, nav
                 for tag in soup(["script", "style", "nav", "footer", "header"]):
                     tag.decompose()
-                return {
-                    "source": source,
-                    "text": soup.get_text(separator="\n", strip=True)[:4000],
-                    "status": "ok"
-                }
+                text = soup.get_text(separator="\n", strip=True)[:4000]
+                print(f"  ✓ {source['name']} — {len(text)} chars")
+                return {"source": source, "text": text, "status": "ok"}
         except Exception as e:
+            print(f"  ✗ {source['name']} — {e}")
             return {"source": source, "text": "", "status": f"error: {e}"}
 
     async def extract_info(self, page: dict) -> dict:

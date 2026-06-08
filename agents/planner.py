@@ -24,7 +24,7 @@ ALL_SOURCES = [
 class PlannerAgent:
     def __init__(self):
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
     async def plan(self, profile: dict, query: str = None) -> list[dict]:
         """

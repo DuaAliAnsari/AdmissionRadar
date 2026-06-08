@@ -8,6 +8,8 @@ Usage:
     python main.py                        # run full pipeline
     python main.py --query "FAST merit"   # ask a one-off question
 """
+from dotenv import load_dotenv
+load_dotenv()
 
 import asyncio
 import argparse

@@ -16,7 +16,7 @@ import os
 class ValidatorAgent:
     def __init__(self):
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = genai.GenerativeModel("gemini-2.0-flash")
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
     def _find_conflicts(self, all_items: list[dict]) -> list[tuple]:
         """Find pairs of items that seem to be about the same thing."""
