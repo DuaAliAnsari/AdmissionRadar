@@ -106,7 +106,8 @@ For each item:
    - "Your aggregate ({aggregate}%) is below this cutoff"
 3. Score relevance 0-10
 
-Return ONLY a JSON array of items with relevance >= 3, each with:- "relevance_score" field added
+Return ONLY a JSON array of items with relevance >= 5, each with:
+- "relevance_score" field added
 - "eligibility_note" field added (if merit info found)
 
 Sort by relevance_score descending. No explanation, just JSON array.
@@ -134,5 +135,62 @@ Sort by relevance_score descending. No explanation, just JSON array.
                             item["eligibility_status"] = elig["status"]
 
             return filtered
+        except Exception:
+            return items
+
+
+# ── Feedback-aware filtering ──────────────────────────────────────────────────
+
+class FeedbackAwareRelevanceAgent(RelevanceAgent):
+    """
+    Extends RelevanceAgent to incorporate user feedback history.
+    After enough feedback is collected, scoring improves automatically.
+    This is the RLHF loop — the agent learns what YOU find useful.
+    """
+
+    async def filter_with_feedback(self, items: list[dict], profile: dict,
+                                    feedback_summary: dict) -> list[dict]:
+        if not items:
+            return []
+
+        aggregate = compute_aggregate(profile)
+        feedback_context = ""
+
+        if feedback_summary and feedback_summary.get("total_feedback", 0) >= 3:
+            feedback_context = f"""
+Based on this student's past feedback ({feedback_summary['total_feedback']} ratings):
+- They LIKED items of types: {feedback_summary.get('liked_types', [])}
+- They DISLIKED items of types: {feedback_summary.get('disliked_types', [])}
+- They LIKED items from sources: {feedback_summary.get('liked_sources', [])}
+- They DISLIKED items from sources: {feedback_summary.get('disliked_sources', [])}
+
+Use this to BOOST scores for items matching liked patterns and LOWER scores for disliked patterns.
+"""
+
+        prompt = f"""
+You are filtering Pakistani university news/deadlines for a specific student.
+
+Student profile:
+{json.dumps(profile, indent=2)}
+Student aggregate: {aggregate}%
+
+{feedback_context}
+
+Items to evaluate:
+{json.dumps(items, indent=2)}
+
+Score each item 0-10 for relevance. Apply feedback adjustments if provided.
+Return ONLY a JSON array of items with score >= 3, each with "relevance_score" added.
+Sort by score descending. No explanation, just JSON.
+        """
+
+        try:
+            response = self.model.generate_content(prompt)
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            return json.loads(text.strip())
         except Exception:
             return items
