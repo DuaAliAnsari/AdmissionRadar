@@ -1,30 +1,26 @@
 # PakStudentAlert 🎓
 
-An autonomous multi-agent system that monitors Pakistani university websites, HEC, and education portals — and proactively alerts students about deadlines, merit lists, and scholarships **without them having to check**.
+Monitors Pakistani university websites, HEC, and education portals daily — and alerts students about deadlines, merit lists, and scholarships without them having to check.
 
-## Architecture
+---
 
-```
-Cloud Scheduler (daily)
-        ↓
-  Planner Agent      → decides which sources to check
-        ↓
-  Crawler Agents     → fetches sources in parallel
-        ↓
-  Validator Agent    → reconciles conflicts between sources
-        ↓
-  Relevance Agent    → filters by student profile
-        ↓
-  Alert Agent        → sends WhatsApp/email if anything is new
-```
+## Features
 
-## What makes it agentic (not just RAG)
+- **Autonomous pipeline** — runs daily without any user prompt
+- **Parallel crawling** — fetches 13+ sources simultaneously
+- **Conflict resolution** — when two sources disagree, Gemini reasons about which to trust
+- **Eligibility filtering** — computes your aggregate and flags programs as eligible, borderline, or below cutoff
+- **Feedback learning** — 👍/👎 ratings improve relevance scoring over time
+- **Gmail alerts** — notifies you only when something new appears
+- **Streamlit UI** — live pipeline view, university explorer, and chat interface
 
-- **Autonomous execution** — runs daily on Cloud Scheduler without any user prompt
-- **Conflict resolution** — when two sources disagree on merit numbers, Gemini reasons about which to trust
-- **Proactive alerts** — pushes notifications before the student thinks to check
-- **Memory** — Firebase tracks what's been sent so you never get duplicate alerts
-- **Parallel execution** — all crawler agents run simultaneously
+---
+
+## Tech Stack
+
+Python · Google Gemini 2.5 · AsyncIO · aiohttp · BeautifulSoup · Firebase · Streamlit · Google Cloud Run
+
+---
 
 ## Setup
 
@@ -32,46 +28,56 @@ Cloud Scheduler (daily)
 git clone https://github.com/yourusername/pakstudent-alert
 cd pakstudent-alert
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your Gemini API key
-# Edit data/student_profile.py with your details
-python main.py
 ```
 
-## Get a Gemini API Key
+Create a `.env` file:
+```
+GEMINI_API_KEY=your_key_here
+GMAIL_ADDRESS=your@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
+```
 
-1. Go to https://ai.google.dev
-2. Click "Get API key"
-3. Free tier is more than enough for this project
-
-## Enable WhatsApp Alerts (optional)
-
-1. Sign up at https://twilio.com (free tier)
-2. Join the WhatsApp sandbox
-3. Add your Twilio credentials to `.env`
-
-## Deploy to run daily automatically
+Edit `data/student_profile.py` with your details, then:
 
 ```bash
-# Deploy to Google Cloud Run
+python main.py                        # run pipeline in terminal
+python -m streamlit run ui/app.py     # run UI
+```
+
+Get a free Gemini API key at https://ai.google.dev
+
+---
+
+## Project Structure
+
+```
+pakstudent-alert/
+├── main.py
+├── agents/
+│   ├── planner.py       ← discipline-aware source selection
+│   ├── crawler.py       ← parallel async crawling
+│   ├── validator.py     ← conflict resolution
+│   ├── relevance.py     ← eligibility filtering + feedback learning
+│   └── alert.py         ← Gmail notifications
+├── data/
+│   ├── universities.py  ← 20+ unis with merit ranges, fees, programs
+│   └── student_profile.py
+├── tools/
+│   ├── firebase_client.py
+│   └── feedback_store.py
+└── ui/
+    └── app.py           ← Streamlit dashboard
+```
+
+---
+
+## Deploy
+
+```bash
 gcloud run deploy pakstudent-alert --source .
 
-# Set up Cloud Scheduler to hit it daily at 8am PKT
 gcloud scheduler jobs create http pakstudent-daily \
   --schedule="0 8 * * *" \
   --time-zone="Asia/Karachi" \
   --uri="YOUR_CLOUD_RUN_URL"
 ```
-
-## Tech stack
-
-- **Google Gemini 2.0 Flash** — LLM for extraction, validation, relevance scoring
-- **aiohttp** — async parallel web crawling
-- **BeautifulSoup** — HTML parsing
-- **Firebase Firestore** — alert deduplication storage
-- **Twilio** — WhatsApp notifications
-- **Google Cloud Run + Scheduler** — serverless deployment + daily trigger
-
-## Built by
-
-[Your name] — built as a portfolio project to demonstrate multi-agent AI systems
